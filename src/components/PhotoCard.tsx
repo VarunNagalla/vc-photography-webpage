@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Photo } from "@/lib/photos";
 import { usePhotoViewer } from "./gallery/PhotoViewer";
+import ProtectedImage from "./ProtectedImage";
 
 interface PhotoCardProps {
   photo: Photo;
@@ -36,7 +36,7 @@ export default function PhotoCard({ photo, index, priority }: PhotoCardProps) {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="absolute inset-0"
         >
-          <Image
+          <ProtectedImage
             src={photo.url}
             alt={photo.caption || "Photograph"}
             fill
