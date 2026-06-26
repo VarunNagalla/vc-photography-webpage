@@ -76,10 +76,10 @@ export default async function HomePage() {
 
         {/* About */}
         <section id="about" className="relative z-10 px-6 pb-28 pt-10 sm:px-10">
-          <div className="mx-auto grid max-w-4xl items-center gap-12 sm:grid-cols-[minmax(0,220px)_1fr]">
+          <div className="mx-auto grid max-w-5xl items-center gap-12 sm:grid-cols-[minmax(0,340px)_1fr]">
             {settings.aboutImage && (
               <Reveal>
-                <div className="relative aspect-square w-full max-w-[220px] overflow-hidden rounded-lg border border-white/10">
+                <div className="relative aspect-[4/5] w-full max-w-[340px] overflow-hidden rounded-lg border border-white/10">
                   <Image src={settings.aboutImage} alt="Varun Nagalla" fill className="object-cover" />
                 </div>
               </Reveal>
