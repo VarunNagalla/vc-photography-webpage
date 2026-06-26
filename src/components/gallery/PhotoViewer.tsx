@@ -10,9 +10,9 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import type { Photo } from "@/lib/photos";
+import ProtectedImage from "@/components/ProtectedImage";
 
 // Loaded client-only: see PhotoDissolveCanvas.tsx for why this can't be a
 // plain top-level import in a component that gets server-rendered.
@@ -155,7 +155,7 @@ export function PhotoViewerProvider({
           </button>
           <figure className="relative flex max-h-full max-w-5xl flex-col items-center">
             <div className="relative max-h-[78vh] w-full">
-              <Image
+              <ProtectedImage
                 src={state.photo.url}
                 alt={state.photo.caption || "Photograph"}
                 width={1600}
