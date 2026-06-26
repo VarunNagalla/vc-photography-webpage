@@ -7,11 +7,10 @@ build/
 .env*.local
 *.log
 .DS_Store
+*.tsbuildinfo
 data/*.json
 !data/.gitkeep
 public/uploads/photos/*
 public/uploads/backgrounds/*
 !public/uploads/photos/.gitkeep
 !public/uploads/backgrounds/.gitkeep
-test/
-*.tsbuildinfo

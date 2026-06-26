@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a single Next.js 15 application (App Router, TypeScript) that serves both the public-facing photography site and the admin dashboard used to manage it. There is no separate backend service and no traditional database — content lives in small JSON files on disk, and uploaded images live in `public/uploads/`. This is a deliberate choice for a single-admin personal site: it removes an entire category of database setup/operational complexity while still being safe, atomic, and easy to back up (it's just files).
+This is a single Next.js 15 application (App Router, TypeScript) that serves both the public-facing photography site and the admin dashboard used to manage it. There is no separate backend service and no traditional SQL database — content lives as small JSON blobs in Upstash Redis, and uploaded images live in Vercel Blob storage. Both are reached over plain HTTPS REST calls from any Function instance, which is what makes this work at all on Vercel: serverless Functions have a read-only filesystem at runtime, so anything the admin panel writes (a caption edit, a new photo, a background image) has to live somewhere other than local disk or it would vanish the moment the Function's instance recycled.
 
 ```
 Browser ──▶ Next.js (App Router)
@@ -13,7 +13,7 @@ Browser ──▶ Next.js (App Router)
                        │
                        ▼
               src/lib (data layer)
-              ├── jsonStore.ts   — generic read/write/update with a write queue + atomic writes
+              ├── jsonStore.ts   — generic read/write/update, backed by Redis (was local files pre-Vercel)
               ├── photos.ts      — photo CRUD on top of jsonStore
               ├── content.ts     — site copy CRUD
               ├── settings.ts    — background image setting
@@ -22,7 +22,8 @@ Browser ──▶ Next.js (App Router)
               └── rateLimit.ts   — in-memory login throttling
                        │
                        ▼
-              data/*.json  +  public/uploads/**
+              Upstash Redis (photos.json/content.json/settings.json as keys)
+              Vercel Blob (photos/**, backgrounds/** — actual image files)
 ```
 
 ## Request flow and rendering strategy
@@ -35,7 +36,7 @@ Every page and API route that reads site data (`/`, `/gallery`, `/about`, `/cont
 export const dynamic = "force-dynamic";
 ```
 
-This forces Next.js to render that route fresh on every request, reading the current JSON files from disk each time. The admin-protected pages under `/admin/(protected)` get this automatically anyway, because their shared layout calls `getServerSession()`, which Next.js already treats as dynamic.
+This forces Next.js to render that route fresh on every request, reading current data from Redis/Blob each time instead of a build-time snapshot. The admin-protected pages under `/admin/(protected)` get this automatically anyway, because their shared layout calls `getServerSession()`, which Next.js already treats as dynamic.
 
 ## Authentication
 
@@ -57,18 +58,22 @@ If one layer ever had a bug or got bypassed, the other still holds — this is s
 1. Check the declared size against a 30MB-per-file cap.
 2. Read the actual file bytes and check the **magic bytes** (file signature) against known JPEG/PNG/GIF/WEBP headers — this is what actually determines whether it's treated as an image, not the filename extension or the `Content-Type` the browser sent. A `.jpg` that isn't really a JPEG is rejected here.
 3. Sanitize the caption (strip control characters, cap length).
-4. Write the file to `public/uploads/photos/` under a randomly generated filename (the original filename is never trusted or used on disk) and append a record to `data/photos.json` via the write-queued JSON store.
+4. Upload the file to Vercel Blob (`put("photos/<uuid>.<ext>", buffer, { access: "public" })`) under a randomly generated filename (the original filename is never trusted or used as a key) and append a record — including the blob's public CDN URL — to the `photos.json` key in Redis via `jsonStore`.
 
 There is no cap on how many files can be included in one request — each is evaluated on its own, so a batch of 50 files with one bad one will still save the other 49 and report the one rejection back to the admin UI. This was an explicit requirement: uploads are not artificially limited.
 
-## Why a JSON file instead of a real database
+Deleting a photo (`DELETE /api/admin/photos/[id]`) removes its Redis record and calls Blob's `del(url)` on its file; `del()` is idempotent (no error if already gone) and free of charge. The background image route (`/api/admin/background`) follows the same upload/delete pattern for a single image instead of a list.
 
-`src/lib/jsonStore.ts` provides `readJson`/`writeJson`/`updateJson` on top of plain files, with two safeguards that matter once you have concurrent requests:
+## Why Redis + Blob instead of local files
 
-- **A write queue** (`enqueue`) — all writes to a given file are chained through a promise queue, so two simultaneous admin actions can't interleave and corrupt the file.
-- **Atomic writes** — every write goes to a temp file first, then is renamed over the real file, so a crash mid-write can never leave a half-written, corrupted JSON file behind.
+The very first version of this site (pre-Vercel) used `src/lib/jsonStore.ts` on top of plain files in `data/*.json`, with a write queue and atomic temp-file-then-rename writes. That worked well for a long-lived server process with a real disk, but Vercel's Functions have a **read-only filesystem at runtime** — any `fs.writeFile` either throws or, worse, appears to succeed and then is gone on the next invocation, since each invocation can land on a fresh instance.
 
-For a single-admin personal site this gives the durability properties that matter without the operational overhead of running a database server.
+`jsonStore.ts` now wraps Upstash Redis instead, but keeps the exact same exported signatures (`readJson`/`writeJson`/`updateJson`) so `photos.ts`/`content.ts`/`settings.ts` needed zero changes. Two things replace the old local-file safeguards:
+
+- **A per-key Redis lock** (`SET key value NX EX 10`) inside `updateJson` — since Redis is reachable from every Function instance (unlike an in-process queue, which only protects writes within the same warm instance), a short-lived lock is what actually prevents two concurrent admin actions on the same record from interleaving.
+- **Redis's own per-key write atomicity** — a `SET` either fully lands or doesn't; there's no equivalent of a half-written file to worry about.
+
+For a single-admin personal site, write contention is essentially never going to happen in practice, but the lock makes `updateJson` correct rather than merely "probably fine."
 
 ## Security hardening summary
 
@@ -79,4 +84,4 @@ See the README's "Security measures implemented" section for the full list (head
 `src/components/Hero3D.tsx` is loaded client-side only via `src/components/Hero3DLoader.tsx`, a small `"use client"` wrapper that calls `next/dynamic(..., { ssr: false })` (Next.js 15 requires `ssr: false` to be set from a Client Component, not from the Server Component page itself, since WebGL has no meaningful server-side render). It composes two pieces under `src/components/three/`:
 
 - `ParticleField.tsx` — an ambient particle backdrop
-- `FloatingFrames.tsx` — the uploaded photos rendered as floating textured planes in 3D space, with a camera rig that responds to m
+- `FloatingFrames.tsx` — the uploaded photos rendered as floating textured planes in 3D space, with a camera rig that responds to mouse/pointer movement, gently parallaxing the camera toward the cursor position each frame.

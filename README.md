@@ -11,7 +11,7 @@ Live architecture and security details are in [ARCHITECTURE.md](./ARCHITECTURE.m
 - **React Three Fiber / drei / three.js** — the animated 3D hero (particle field + floating photo planes that respond to mouse movement)
 - **NextAuth.js (Credentials provider)** — admin-only authentication, JWT sessions, no database of users
 - **bcryptjs** — password hashing
-- A small **JSON-file data layer** (`src/lib/*.ts`) instead of a database — appropriate for a single-admin personal site, with safe atomic writes
+- **Upstash Redis** (via Vercel's Marketplace integration) for site data (photos/content/settings) and **Vercel Blob** for uploaded files — chosen because Vercel's serverless Functions have a read-only filesystem at runtime, so anything written by the admin panel has to live somewhere other than local disk
 
 ## Getting started
 
@@ -38,6 +38,8 @@ npm start
 | `ADMIN_PASSWORD_HASH` | A **bcrypt hash** of the admin password — never the plain password |
 | `NEXTAUTH_SECRET` | Random secret NextAuth uses to sign session tokens |
 | `NEXTAUTH_URL` | The base URL of the site (`http://localhost:3000` locally) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob store token — auto-set when you connect a Blob store to the project |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Upstash Redis REST credentials — auto-set when you connect the Upstash-for-Redis Marketplace integration |
 
 **Important — the one gotcha you can hit:** bcrypt hashes start with `$2a$` or `$2b$`. Next.js's env loader treats a bare `$` followed by a name as a variable reference and will silently mangle the hash, breaking login. Always escape every `$` as `\$` in `.env.local`, e.g.:
 
@@ -56,13 +58,13 @@ Copy its output straight into `ADMIN_PASSWORD_HASH` in `.env.local` and restart 
 
 ## Where things are stored
 
-- Site content (hero text, about copy, contact info): `data/content.json`
-- Photo metadata (captions, order, URLs): `data/photos.json`
-- Background image setting: `data/settings.json`
-- Uploaded photo files: `public/uploads/photos/`
-- Uploaded background image: `public/uploads/backgrounds/`
+- Site content (hero text, about copy, contact info): Redis key `content.json`
+- Photo metadata (captions, order, URLs): Redis key `photos.json`
+- Background image setting: Redis key `settings.json`
+- Uploaded photo files: Vercel Blob, under `photos/`
+- Uploaded background image: Vercel Blob, under `backgrounds/`
 
-All of the above are git-ignored except for `.gitkeep` placeholders, so the repo ships empty and your real photos/content live only on disk (or wherever you deploy the `data/` and `public/uploads/` folders).
+Nothing is stored on local disk in production — both Redis and Blob are reachable over HTTPS from any serverless Function instance, which is what makes this work on Vercel. (`src/lib/jsonStore.ts` keeps the exact same `readJson`/`writeJson`/`updateJson` interface a file-backed version would have had, so the rest of the data layer — `photos.ts`, `content.ts`, `settings.ts` — doesn't know or care that the backend is Redis instead of files.)
 
 ## Admin capabilities
 
@@ -88,4 +90,4 @@ All changes appear on the public site immediately — pages are server-rendered 
 
 ## Testing performed
 
-The full build (`npm run build`) and lint (`next lint`) are clean. A scripted end-to-end pass against a running server verified: unauthenticated visitors are redirected away from `/admin` and get `401`s from `/api/admin/*`; correct vs. incorrect admin credentials are handled correctly; a multi-file batch upload (6 valid images + 1 deliberately invalid file in the same request) succeeds for the valid files and reports the invalid one without blocking the batch; new uploads, caption edits, deletes, reordering, content edits, and background image changes all appear on the public site immediately with no server restart; and a caption containing a `<script>` payload is stored as plain text 
+The full build (`npm run build`) and lint (`next lint`) are clean. A scripted end-to-end pass against a running server verified: unauthenticated visitors are redirected away from `/admin` and get `401`s from `/api/admin/*`; correct vs. incorrect admin credentials are handled correctly; a multi-file batch upload (6 valid images + 1 deliberately invalid file in the same request) succeeds for the valid files and reports the invalid one without blocking the batch; new uploads, caption edits, deletes, reordering, content edits, and background image changes all appear on the public site immediately with no server restart; and a caption containing a `<script>` payload is stored as plain text and rendered harmlessly as escaped text rather than executed.

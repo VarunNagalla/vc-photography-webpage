@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import path from "path";
-import { promises as fs } from "fs";
+import { del } from "@vercel/blob";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { deletePhoto, updatePhoto, getPhotos } from "@/lib/photos";
-
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "photos");
 
 const patchSchema = z.object({
   caption: z.string().max(500).optional(),
@@ -44,9 +41,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!exists) return NextResponse.json({ error: "Photo not found" }, { status: 404 });
 
   const removed = await deletePhoto(id);
+  // removed.url is the full Vercel Blob URL — del() accepts that directly.
+  // It's a no-op (not an error) if the blob is already gone, and free of
+  // charge, so no need to guard this beyond the usual catch-and-ignore.
   if (removed) {
-    const filePath = path.join(UPLOAD_DIR, removed.filename);
-    await fs.unlink(filePath).catch(() => undefined);
+    await del(removed.url).catch(() => undefined);
   }
 
   return NextResponse.json({ success: true });

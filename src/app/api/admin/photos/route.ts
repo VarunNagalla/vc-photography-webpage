@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { v4 as uuidv4 } from "uuid";
-import path from "path";
-import { promises as fs } from "fs";
+import { put } from "@vercel/blob";
 import { authOptions } from "@/lib/auth";
 import { addPhoto, getPhotos } from "@/lib/photos";
 import { sniffImage, isWithinSizeLimit, MAX_FILE_BYTES } from "@/lib/fileValidation";
 
 export const dynamic = "force-dynamic";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "photos");
 const MAX_CAPTION_LENGTH = 500;
 
 function sanitizeCaption(raw: string | null): string {
@@ -27,6 +25,13 @@ export async function GET() {
 // Accepts one or many photos in a single request. There is no cap on how
 // many files can be uploaded — each file is validated independently by
 // real file content (magic bytes), not by extension or declared MIME type.
+//
+// Files are stored in Vercel Blob rather than on local disk: Vercel's
+// serverless Functions have a read-only filesystem at runtime, so a plain
+// fs.writeFile here would either throw or silently disappear on the next
+// cold start. addRandomSuffix avoids collisions instead of throwing on an
+// existing pathname (uuidv4() filenames make collisions astronomically
+// unlikely anyway, but the random suffix is free insurance).
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,8 +49,6 @@ export async function POST(req: NextRequest) {
   if (files.length === 0) {
     return NextResponse.json({ error: "No files provided" }, { status: 400 });
   }
-
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
 
   const created = [];
   const rejected: { name: string; reason: string }[] = [];
@@ -68,13 +71,15 @@ export async function POST(req: NextRequest) {
     }
 
     const filename = `${uuidv4()}.${sniffed.ext}`;
-    const destination = path.join(UPLOAD_DIR, filename);
-    await fs.writeFile(destination, buffer);
+    const blob = await put(`photos/${filename}`, buffer, {
+      access: "public",
+      addRandomSuffix: true,
+    });
 
     const photo = await addPhoto({
       id: uuidv4(),
-      filename,
-      url: `/uploads/photos/${filename}`,
+      filename: blob.pathname,
+      url: blob.url,
       caption,
       createdAt: new Date().toISOString(),
     });

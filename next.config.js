@@ -16,7 +16,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://picsum.photos https://fastly.picsum.photos",
+      "img-src 'self' data: blob: https://picsum.photos https://fastly.picsum.photos https://*.public.blob.vercel-storage.com",
       "font-src 'self' data:",
       "connect-src 'self'",
       "frame-ancestors 'none'",
@@ -39,6 +39,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'fastly.picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.public.blob.vercel-storage.com',
       },
     ],
   },

@@ -1,51 +1,74 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { Redis } from "@upstash/redis";
+import { randomUUID } from "crypto";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// Storage backend for all site data (photos, content copy, settings).
+//
+// This used to be local JSON files on disk (see git history) — that
+// worked fine for a single long-lived server process with a persistent
+// disk, but breaks on Vercel: serverless Functions have a read-only
+// filesystem at runtime, so writes from /admin would either fail or
+// silently vanish on the next invocation. Redis (via the Upstash
+// integration in the Vercel Marketplace) gives the same "small JSON
+// blob per logical file" model without needing a real database, and
+// works identically in local dev and in production as long as
+// KV_REST_API_URL / KV_REST_API_TOKEN (or the UPSTASH_REDIS_REST_*
+// equivalents) are set.
+//
+// The exported function names and signatures (readJson/writeJson/
+// updateJson) are unchanged from the old file-backed version, so
+// photos.ts / content.ts / settings.ts needed no changes at all.
 
-// Simple in-process write queue so concurrent writes to the same file
-// never interleave and corrupt the JSON on disk.
-const queues = new Map<string, Promise<unknown>>();
+const redis = Redis.fromEnv();
 
-function enqueue<T>(key: string, task: () => Promise<T>): Promise<T> {
-  const prev = queues.get(key) ?? Promise.resolve();
-  const next = prev.then(task, task);
-  queues.set(
-    key,
-    next.catch(() => undefined)
-  );
-  return next;
-}
+// Upstash Redis is reachable from anywhere (it's a REST API), so a
+// single in-process write queue isn't enough to prevent two concurrent
+// serverless invocations from interleaving a read-modify-write. A
+// short-lived SET NX EX lock gives real cross-instance mutual exclusion
+// for the rare case of two admin actions landing at the same moment —
+// this is a single-admin site, so contention is expected to be
+// essentially nonexistent, but the lock makes updateJson() correct
+// rather than just "probably fine."
+async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const lockKey = `lock:${key}`;
+  const lockId = randomUUID();
+  let acquired = false;
 
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-}
-
-export async function readJson<T>(file: string, fallback: T): Promise<T> {
-  await ensureDataDir();
-  const filePath = path.join(DATA_DIR, file);
-  try {
-    const raw = await fs.readFile(filePath, "utf-8");
-    if (!raw.trim()) return fallback;
-    return JSON.parse(raw) as T;
-  } catch (err: unknown) {
-    if (err && typeof err === "object" && "code" in err && (err as { code?: string }).code === "ENOENT") {
-      await writeJson(file, fallback);
-      return fallback;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const result = await redis.set(lockKey, lockId, { nx: true, ex: 10 });
+    if (result === "OK") {
+      acquired = true;
+      break;
     }
-    throw err;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  if (!acquired) {
+    throw new Error(`Could not acquire lock for "${key}" — another write is in progress`);
+  }
+
+  try {
+    return await fn();
+  } finally {
+    // Only clear the lock if we still own it, so a slow holder can
+    // never delete a newer holder's lock after its own TTL expired.
+    const current = await redis.get<string>(lockKey);
+    if (current === lockId) {
+      await redis.del(lockKey);
+    }
   }
 }
 
+export async function readJson<T>(file: string, fallback: T): Promise<T> {
+  const data = await redis.get<T>(file);
+  if (data === null || data === undefined) {
+    await writeJson(file, fallback);
+    return fallback;
+  }
+  return data;
+}
+
 export async function writeJson<T>(file: string, data: T): Promise<void> {
-  return enqueue(file, async () => {
-    await ensureDataDir();
-    const filePath = path.join(DATA_DIR, file);
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    const serialized = JSON.stringify(data, null, 2);
-    await fs.writeFile(tmpPath, serialized, "utf-8");
-    await fs.rename(tmpPath, filePath);
-  });
+  await redis.set(file, data);
 }
 
 export async function updateJson<T>(
@@ -53,20 +76,10 @@ export async function updateJson<T>(
   fallback: T,
   updater: (current: T) => T
 ): Promise<T> {
-  return enqueue(file, async () => {
-    await ensureDataDir();
-    const filePath = path.join(DATA_DIR, file);
-    let current: T;
-    try {
-      const raw = await fs.readFile(filePath, "utf-8");
-      current = raw.trim() ? (JSON.parse(raw) as T) : fallback;
-    } catch {
-      current = fallback;
-    }
+  return withLock(file, async () => {
+    const current = (await redis.get<T>(file)) ?? fallback;
     const updated = updater(current);
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.writeFile(tmpPath, JSON.stringify(updated, null, 2), "utf-8");
-    await fs.rename(tmpPath, filePath);
+    await redis.set(file, updated);
     return updated;
   });
 }
