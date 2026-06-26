@@ -25,7 +25,6 @@ export default function Hero3D({ photoUrls = [] as string[] }) {
         camera={{ position: [0, 0, 2], fov: 55 }}
         dpr={[1, 1.6]}
       >
-        <color attach="background" args={["#00000000"]} />
         <fog attach="fog" args={["#0a0a0a", 4, 14]} />
         <ambientLight intensity={0.6} />
         <CameraRig />
