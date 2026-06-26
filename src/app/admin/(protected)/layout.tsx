@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { authOptions } from "@/lib/auth";
 import LogoutButton from "@/components/LogoutButton";
+import AdminMobileNav from "@/components/admin/AdminMobileNav";
 
 const navItems = [
   { href: "/admin", label: "Overview" },
@@ -22,7 +23,8 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
 
   return (
     <div className="min-h-screen bg-ink text-bone">
-      <div className="flex min-h-screen">
+      <AdminMobileNav navItems={navItems} />
+      <div className="flex min-h-screen flex-col sm:flex-row">
         <aside className="hidden w-60 flex-col border-r border-white/10 bg-black/30 p-6 sm:flex">
           <p className="mb-8 font-display text-xl text-bone/90">Admin Panel</p>
           <nav className="flex flex-col gap-2 text-sm">
@@ -43,7 +45,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
             <LogoutButton />
           </div>
         </aside>
-        <main className="flex-1 p-6 sm:p-10">{children}</main>
+        <main className="flex-1 overflow-x-hidden p-4 sm:p-10">{children}</main>
       </div>
     </div>
   );
