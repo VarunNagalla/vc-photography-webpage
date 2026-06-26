@@ -10,7 +10,16 @@ export default function Footer({ email, instagram, location }: FooterProps) {
       <p className="font-display text-base tracking-wide text-bone/80">Varun Nagalla Photography</p>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs uppercase tracking-[0.15em]">
         {email && <span>{email}</span>}
-        {instagram && <span>{instagram}</span>}
+        {instagram && (
+          <a
+            href={`https://instagram.com/${instagram.replace(/^@/, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-accent transition-colors"
+          >
+            {instagram}
+          </a>
+        )}
         {location && <span>{location}</span>}
       </div>
       <p className="mt-6 text-[11px] text-bone/40">
