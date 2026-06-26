@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Clean up the previously uploaded about photo (if any) before saving
   // the new one, so unused blobs don't accumulate and rack up storage.
   const previous = await getSettings();
-  if (previous.aboutImage.startsWith("https://")) {
+  if (previous.aboutImage?.startsWith("https://")) {
     await del(previous.aboutImage).catch(() => undefined);
   }
 
@@ -64,7 +64,7 @@ export async function DELETE() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const previous = await getSettings();
-  if (previous.aboutImage.startsWith("https://")) {
+  if (previous.aboutImage?.startsWith("https://")) {
     await del(previous.aboutImage).catch(() => undefined);
   }
   const settings = await setAboutImage("");
