@@ -19,7 +19,11 @@ export default function Hero3D({ photoUrls = [] as string[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={containerRef} className="absolute inset-0">
+    <div
+      ref={containerRef}
+      className="absolute inset-0"
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <Canvas
         gl={{ antialias: true, alpha: true }}
         camera={{ position: [0, 0, 2], fov: 55 }}
