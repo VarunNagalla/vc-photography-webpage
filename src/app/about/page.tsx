@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BackgroundBackdrop from "@/components/BackgroundBackdrop";
+import Reveal from "@/components/Reveal";
 import { getContent } from "@/lib/content";
 import { getSettings } from "@/lib/settings";
 
@@ -20,8 +21,12 @@ export default async function AboutPage() {
       <Navbar />
       <section className="relative z-10 flex min-h-screen items-center px-6 pt-24 sm:px-10">
         <div className="mx-auto max-w-3xl">
-          <h1 className="mb-8 font-display text-4xl text-bone/90 sm:text-5xl">{content.about.heading}</h1>
-          <p className="whitespace-pre-line text-lg leading-relaxed text-bone/75">{content.about.body}</p>
+          <Reveal variant="mask">
+            <h1 className="mb-8 font-display text-4xl text-bone/90 sm:text-5xl">{content.about.heading}</h1>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <p className="whitespace-pre-line text-lg leading-relaxed text-bone/75">{content.about.body}</p>
+          </Reveal>
         </div>
       </section>
       <Footer email={content.contact.email} instagram={content.contact.instagram} location={content.contact.location} />

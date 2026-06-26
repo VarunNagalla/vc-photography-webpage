@@ -2,35 +2,63 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import type { Photo } from "@/lib/photos";
+import { usePhotoViewer } from "./gallery/PhotoViewer";
 
 interface PhotoCardProps {
-  src: string;
-  caption?: string;
+  photo: Photo;
+  index: number;
   priority?: boolean;
 }
 
-export default function PhotoCard({ src, caption, priority }: PhotoCardProps) {
+/**
+ * Large, full-bleed-feeling tile (no conventional small-thumbnail grid).
+ * Hovering scales and slightly darkens the image and reveals an index +
+ * caption; the custom cursor switches to a "View" label via data-cursor.
+ * Clicking hands off to the PhotoViewer for the WebGL dissolve transition.
+ */
+export default function PhotoCard({ photo, index, priority }: PhotoCardProps) {
   const [loaded, setLoaded] = useState(false);
+  const { open } = usePhotoViewer();
 
   return (
-    <figure className="group relative mb-6 break-inside-avoid overflow-hidden rounded-sm bg-white/5">
-      <div className={`relative w-full transition-opacity duration-700 ${loaded ? "opacity-100" : "opacity-0"}`}>
-        <Image
-          src={src}
-          alt={caption || "Photograph"}
-          width={1200}
-          height={1500}
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          priority={priority}
-          onLoad={() => setLoaded(true)}
-        />
+    <button
+      type="button"
+      onClick={(e) => open(photo, e)}
+      data-cursor="view"
+      className="group relative block aspect-[4/5] w-full overflow-hidden bg-white/5 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+    >
+      <div className={`absolute inset-0 transition-opacity duration-700 ${loaded ? "opacity-100" : "opacity-0"}`}>
+        <motion.div
+          initial={{ scale: 1 }}
+          whileHover={{ scale: 1.07 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute inset-0"
+        >
+          <Image
+            src={photo.url}
+            alt={photo.caption || "Photograph"}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+            priority={priority}
+            onLoad={() => setLoaded(true)}
+          />
+        </motion.div>
+        <div className="absolute inset-0 bg-ink opacity-0 transition-opacity duration-500 group-hover:opacity-30" />
       </div>
-      {caption && (
-        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-sm text-bone/90 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          {caption}
-        </figcaption>
-      )}
-    </figure>
+
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-5 sm:p-7">
+        <span className="self-start text-xs uppercase tracking-[0.2em] text-bone/50">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        {photo.caption && (
+          <span className="max-w-[80%] translate-y-2 text-sm uppercase tracking-[0.15em] text-bone/90 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+            {photo.caption}
+          </span>
+        )}
+      </div>
+    </button>
   );
 }

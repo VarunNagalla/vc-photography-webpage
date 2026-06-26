@@ -11,9 +11,11 @@ export default function GalleryGrid({ photos }: { photos: Photo[] }) {
   }
 
   return (
-    <div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
+    <div className="grid grid-cols-1 gap-px sm:grid-cols-2">
       {photos.map((photo, i) => (
-        <PhotoCard key={photo.id} src={photo.url} caption={photo.caption} priority={i < 3} />
+        <div key={photo.id} className={i % 5 === 0 ? "sm:col-span-2" : ""}>
+          <PhotoCard photo={photo} index={i} priority={i < 2} />
+        </div>
       ))}
     </div>
   );
