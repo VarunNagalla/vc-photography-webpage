@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a single Next.js 14 application (App Router, TypeScript) that serves both the public-facing photography site and the admin dashboard used to manage it. There is no separate backend service and no traditional database — content lives in small JSON files on disk, and uploaded images live in `public/uploads/`. This is a deliberate choice for a single-admin personal site: it removes an entire category of database setup/operational complexity while still being safe, atomic, and easy to back up (it's just files).
+This is a single Next.js 15 application (App Router, TypeScript) that serves both the public-facing photography site and the admin dashboard used to manage it. There is no separate backend service and no traditional database — content lives in small JSON files on disk, and uploaded images live in `public/uploads/`. This is a deliberate choice for a single-admin personal site: it removes an entire category of database setup/operational complexity while still being safe, atomic, and easy to back up (it's just files).
 
 ```
 Browser ──▶ Next.js (App Router)
@@ -76,9 +76,7 @@ See the README's "Security measures implemented" section for the full list (head
 
 ## The 3D hero
 
-`src/components/Hero3D.tsx` is loaded client-side only (via `next/dynamic` with `ssr: false`, since WebGL has no meaningful server-side render) and composes two pieces under `src/components/three/`:
+`src/components/Hero3D.tsx` is loaded client-side only via `src/components/Hero3DLoader.tsx`, a small `"use client"` wrapper that calls `next/dynamic(..., { ssr: false })` (Next.js 15 requires `ssr: false` to be set from a Client Component, not from the Server Component page itself, since WebGL has no meaningful server-side render). It composes two pieces under `src/components/three/`:
 
 - `ParticleField.tsx` — an ambient particle backdrop
-- `FloatingFrames.tsx` — the uploaded photos rendered as floating textured planes in 3D space, with a camera rig that responds to mouse movement for the parallax effect
-
-Because it's dynamically imported, the rest of the page (which is server-rendered for content/SEO) doesn't wait on or get blocked by the WebGL bundle.
+- `FloatingFrames.tsx` — the uploaded photos rendered as floating textured planes in 3D space, with a camera rig that responds to m

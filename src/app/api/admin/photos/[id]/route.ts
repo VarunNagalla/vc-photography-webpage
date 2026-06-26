@@ -12,7 +12,8 @@ const patchSchema = z.object({
   caption: z.string().max(500).optional(),
 });
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -27,21 +28,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ? parsed.data.caption.replace(/[\x00-\x1F\x7F]/g, "").trim()
       : undefined;
 
-  const updated = await updatePhoto(params.id, { caption: sanitizedCaption });
+  const updated = await updatePhoto(id, { caption: sanitizedCaption });
   if (!updated) return NextResponse.json({ error: "Photo not found" }, { status: 404 });
 
   return NextResponse.json({ photo: updated });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const photos = await getPhotos();
-  const exists = photos.some((p) => p.id === params.id);
+  const exists = photos.some((p) => p.id === id);
   if (!exists) return NextResponse.json({ error: "Photo not found" }, { status: 404 });
 
-  const removed = await deletePhoto(params.id);
+  const removed = await deletePhoto(id);
   if (removed) {
     const filePath = path.join(UPLOAD_DIR, removed.filename);
     await fs.unlink(filePath).catch(() => undefined);

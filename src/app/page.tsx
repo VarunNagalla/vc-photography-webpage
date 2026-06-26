@@ -1,9 +1,9 @@
-import nextDynamic from "next/dynamic";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BackgroundBackdrop from "@/components/BackgroundBackdrop";
 import PhotoCard from "@/components/PhotoCard";
+import Hero3D from "@/components/Hero3DLoader";
 import { getPhotos } from "@/lib/photos";
 import { getContent } from "@/lib/content";
 import { getSettings } from "@/lib/settings";
@@ -12,8 +12,6 @@ import { getSettings } from "@/lib/settings";
 // any time and visitors must see the update immediately, not a build-time
 // snapshot.
 export const dynamic = "force-dynamic";
-
-const Hero3D = nextDynamic(() => import("@/components/Hero3D"), { ssr: false });
 
 export default async function HomePage() {
   const [photos, content, settings] = await Promise.all([getPhotos(), getContent(), getSettings()]);

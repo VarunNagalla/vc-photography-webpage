@@ -6,7 +6,7 @@ Live architecture and security details are in [ARCHITECTURE.md](./ARCHITECTURE.m
 
 ## Tech stack
 
-- **Next.js 14** (App Router, TypeScript) — full-stack framework, server-rendered on every request
+- **Next.js 15** (App Router, TypeScript) — full-stack framework, server-rendered on every request
 - **Tailwind CSS** — styling
 - **React Three Fiber / drei / three.js** — the animated 3D hero (particle field + floating photo planes that respond to mouse movement)
 - **NextAuth.js (Credentials provider)** — admin-only authentication, JWT sessions, no database of users
@@ -84,12 +84,8 @@ All changes appear on the public site immediately — pages are server-rendered 
 - Per-file size cap (30MB) and server-side caption sanitization (control characters stripped, length capped).
 - Captions are rendered through React's default escaping, so a caption containing `<script>` tags is displayed as harmless text, not executed.
 - Security headers are set globally (`next.config.js`): Content-Security-Policy, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Strict-Transport-Security, Referrer-Policy, Permissions-Policy, and `X-Powered-By` is removed.
-- Dependencies pinned to patched versions (e.g. Next.js 14.2.35) to avoid known published vulnerabilities in older releases.
+- Dependencies pinned to patched versions (Next.js 15.5.19, next-auth 4.24.14, etc.) and regularly checked with `npm audit`; the only remaining advisories are moderate-severity issues bundled inside next-auth's own nested dependencies (not reachable through any input this app accepts) with no further upstream patch released yet.
 
 ## Testing performed
 
-The full build (`npm run build`) and lint (`next lint`) are clean. A scripted end-to-end pass against a running server verified: unauthenticated visitors are redirected away from `/admin` and get `401`s from `/api/admin/*`; correct vs. incorrect admin credentials are handled correctly; a multi-file batch upload (6 valid images + 1 deliberately invalid file in the same request) succeeds for the valid files and reports the invalid one without blocking the batch; new uploads, caption edits, deletes, reordering, content edits, and background image changes all appear on the public site immediately with no server restart; and a caption containing a `<script>` payload is stored as plain text and rendered safely escaped rather than executed.
-
-## License
-
-MIT — see [LICENSE](./LICENSE). Note this covers the website's source code only, not any photographs or personal content you upload into it.
+The full build (`npm run build`) and lint (`next lint`) are clean. A scripted end-to-end pass against a running server verified: unauthenticated visitors are redirected away from `/admin` and get `401`s from `/api/admin/*`; correct vs. incorrect admin credentials are handled correctly; a multi-file batch upload (6 valid images + 1 deliberately invalid file in the same request) succeeds for the valid files and reports the invalid one without blocking the batch; new uploads, caption edits, deletes, reordering, content edits, and background image changes all appear on the public site immediately with no server restart; and a caption containing a `<script>` payload is stored as plain text 
