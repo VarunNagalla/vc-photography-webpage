@@ -122,7 +122,17 @@ export default async function HomePage() {
                 {instagram && (
                   <div>
                     <dt className="text-xs uppercase tracking-[0.2em] text-accent/80">Instagram</dt>
-                    <dd className="mt-1">{instagram}</dd>
+                    <dd className="mt-1">
+                      <a
+                        href={`https://instagram.com/${instagram.replace(/^@/, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-cursor="go"
+                        className="hover:text-accent transition-colors"
+                      >
+                        {instagram}
+                      </a>
+                    </dd>
                   </div>
                 )}
                 {location && (
