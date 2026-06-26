@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BackgroundBackdrop from "@/components/BackgroundBackdrop";
 import GalleryGrid from "@/components/GalleryGrid";
+import ProtectedImage from "@/components/ProtectedImage";
 import Hero3D from "@/components/Hero3DLoader";
 import Reveal from "@/components/Reveal";
 import { PhotoViewerProvider } from "@/components/gallery/PhotoViewer";
@@ -80,7 +80,7 @@ export default async function HomePage() {
             {settings.aboutImage && (
               <Reveal>
                 <div className="relative aspect-[4/5] w-full max-w-[340px] overflow-hidden rounded-lg border border-white/10">
-                  <Image src={settings.aboutImage} alt="Varun Nagalla" fill className="object-cover" />
+                  <ProtectedImage src={settings.aboutImage} alt="Varun Nagalla" fill className="object-cover" />
                 </div>
               </Reveal>
             )}
