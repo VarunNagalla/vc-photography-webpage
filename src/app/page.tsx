@@ -107,7 +107,13 @@ export default async function HomePage() {
         <section id="contact" className="relative z-10 flex min-h-[70vh] items-center px-6 pb-28 pt-10 sm:px-10">
           <div className="mx-auto max-w-2xl">
             <Reveal variant="mask">
-              <h2 className="mb-8 font-display text-3xl text-bone/90 sm:text-4xl">Let&apos;s Connect</h2>
+              <div className="mb-8 flex flex-wrap items-center gap-6 sm:gap-10">
+                <h2 className="font-display text-3xl text-bone/90 sm:text-4xl">Let&apos;s Connect</h2>
+                {settings.logoImage && (
+                  <ProtectedImage src={settings.logoImage} alt="Photography logo" width={180} height={180}
+                    className="h-36 w-44 object-contain sm:h-44 sm:w-56" />
+                )}
+              </div>
             </Reveal>
             <Reveal delay={0.15}>
               <dl className="space-y-6 text-lg text-bone/80">

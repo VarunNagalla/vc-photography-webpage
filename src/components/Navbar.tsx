@@ -10,7 +10,7 @@ const links = [
 export default function Navbar({ logoImage }: { logoImage?: string }) {
   return (
     <header className="fixed top-0 inset-x-0 z-30">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4 sm:px-10">
         <Link
           href="/"
           aria-label="Varun Nagalla Photography — Home"
@@ -18,8 +18,8 @@ export default function Navbar({ logoImage }: { logoImage?: string }) {
           className="font-display text-xl tracking-[0.15em] text-bone/90 hover:text-accent transition-colors"
         >
           {logoImage ? (
-            <Image src={logoImage} alt="Varun Nagalla Photography logo" width={48} height={48}
-              priority className="h-12 w-12 rounded-full object-contain" />
+            <Image src={logoImage} alt="Varun Nagalla Photography logo" width={128} height={128}
+              priority className="h-24 w-28 object-contain sm:h-28 sm:w-36" />
           ) : "VN"}
         </Link>
         <ul className="flex items-center gap-4 text-xs sm:gap-8 sm:text-sm uppercase tracking-[0.18em] text-bone/70">

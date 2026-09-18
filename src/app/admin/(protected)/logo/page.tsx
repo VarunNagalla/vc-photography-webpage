@@ -46,7 +46,7 @@ export default function AdminLogoPage() {
       }
       const data = await response.json();
       setLogoImage(data.settings.logoImage || "");
-      setMessage(file ? "Logo updated. It is now live on your website." : "Logo removed. Your website now shows VN.");
+      setMessage(file ? "Logo updated in the header and beside Let’s Connect." : "Logo removed from both places. The header now shows VN.");
       router.refresh();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Couldn't save your logo. Please try again.");
@@ -59,10 +59,10 @@ export default function AdminLogoPage() {
     <div className="max-w-2xl">
       <h1 className="mb-2 font-display text-3xl text-bone/90">Logo</h1>
       <p className="mb-8 text-sm text-bone/60">
-        Your photography profile image appears at the top of your website and links to the homepage.
-        Choose a square image for the best fit. PNG, JPEG, WebP or GIF, up to 4 MB.
+        Upload once to update your logo in the website header and beside Let’s Connect at the bottom.
+        Your full image is displayed without cropping. PNG, JPEG, WebP or GIF, up to 4 MB.
       </p>
-      <div className="mb-6 flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-black/30">
+      <div className="mb-6 flex h-40 w-56 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-black/30">
         {loading ? <span className="text-sm text-bone/60">Loading…</span> : logoImage ? (
           <Image src={logoImage} alt="Current photography logo" width={160} height={160} className="h-full w-full object-contain" />
         ) : <span className="font-display text-4xl text-bone/90">VN</span>}
