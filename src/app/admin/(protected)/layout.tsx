@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/photos", label: "Photos" },
   { href: "/admin/content", label: "Site Content" },
   { href: "/admin/about-photo", label: "About Photo" },
+  { href: "/admin/logo", label: "Logo" },
   { href: "/admin/background", label: "Background" },
 ];
 

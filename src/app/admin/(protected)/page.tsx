@@ -7,6 +7,7 @@ export default async function AdminDashboardPage() {
 
   const cards = [
     { label: "Published Photos", value: photos.length, href: "/admin/photos" },
+    { label: "Logo", value: settings.logoImage ? "Custom" : "VN", href: "/admin/logo" },
     { label: "Background Image", value: settings.backgroundImage ? "Custom" : "Default", href: "/admin/background" },
     { label: "Site Content", value: "Editable", href: "/admin/content" },
   ];

@@ -60,7 +60,7 @@ async function main() {
   }
 
   // Upload and metadata failures must not delete the previous image.
-  for (const [route, field, setter] of [["background", "backgroundImage", "setBackgroundImage"], ["about-photo", "aboutImage", "setAboutImage"]]) {
+  for (const [route, field, setter] of [["background", "backgroundImage", "setBackgroundImage"], ["about-photo", "aboutImage", "setAboutImage"], ["logo", "logoImage", "setLogoImage"]]) {
     for (const failure of ["upload", "metadata", null]) {
       const events = [];
       const handlers = load(`src/app/api/admin/${route}/route.ts`, {
@@ -86,6 +86,29 @@ async function main() {
       }
     }
   }
+
+  // Existing settings predate the logo field; changing it preserves the others.
+  let stored = { aboutImage: "https://example.com/about.jpg", backgroundImage: "" };
+  const settings = load("src/lib/settings.ts", { "./jsonStore": {
+    readJson: async () => stored,
+    updateJson: async (_key, _fallback, update) => (stored = update(stored)),
+  } });
+  assert.equal((await settings.getSettings()).logoImage, "");
+  const logoHandlers = load("src/app/api/admin/logo/route.ts", {
+    "@/lib/adminAccess": { authorizeAdmin: async () => null },
+    "@/lib/fileValidation": { sniffImage },
+    "@/lib/settings": settings,
+    "@vercel/blob": { put: async () => ({ url: "https://example.com/logo.png" }), del: async () => {} },
+  });
+  const upload = file => logoHandlers.POST({ formData: async () => ({ get: () => file }) });
+  assert.equal((await upload(new File([Buffer.alloc(4 * 1024 * 1024 + 1)], "large.png"))).status, 400);
+  assert.equal((await upload(new File(["not an image"], "fake.png"))).status, 400);
+  assert.equal((await upload(new File([Buffer.from("89504e470d0a1a0a00000000", "hex")], "logo.png"))).status, 200);
+  assert.equal(stored.logoImage, "https://example.com/logo.png");
+  assert.equal(stored.aboutImage, "https://example.com/about.jpg");
+  assert.equal((await logoHandlers.DELETE(request("DELETE"))).status, 200);
+  assert.equal(stored.logoImage, "");
+  assert.equal(stored.aboutImage, "https://example.com/about.jpg");
 
   // Exercise the actual Redis Lua script with a unique expiring test key.
   require("@next/env").loadEnvConfig(process.cwd());

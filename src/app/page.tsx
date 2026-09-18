@@ -31,7 +31,7 @@ export default async function HomePage() {
     <PhotoViewerProvider photos={photos}>
       <main className="relative min-h-screen">
         <BackgroundBackdrop imageUrl={settings.backgroundImage || undefined} />
-        <Navbar />
+        <Navbar logoImage={settings.logoImage} />
 
         {/* Hero */}
         <section id="home" className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">

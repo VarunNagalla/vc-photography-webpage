@@ -7,6 +7,7 @@ export interface SiteSettings {
     // Empty string means "no photo uploaded yet" — the About page renders
   // text-only.
   aboutImage: string;
+  logoImage: string;
 }
 
 const FILE = "settings.json";
@@ -14,10 +15,11 @@ const FILE = "settings.json";
 export const DEFAULT_SETTINGS: SiteSettings = {
     backgroundImage: "",
     aboutImage: "",
+    logoImage: "",
 };
 
 export async function getSettings(): Promise<SiteSettings> {
-    return readJson<SiteSettings>(FILE, DEFAULT_SETTINGS);
+    return { ...DEFAULT_SETTINGS, ...await readJson<SiteSettings>(FILE, DEFAULT_SETTINGS) };
 }
 
 export async function setBackgroundImage(url: string): Promise<SiteSettings> {
@@ -26,4 +28,8 @@ export async function setBackgroundImage(url: string): Promise<SiteSettings> {
 
 export async function setAboutImage(url: string): Promise<SiteSettings> {
     return updateJson<SiteSettings>(FILE, DEFAULT_SETTINGS, current => ({ ...current, aboutImage: url }));
+}
+
+export async function setLogoImage(url: string): Promise<SiteSettings> {
+    return updateJson<SiteSettings>(FILE, DEFAULT_SETTINGS, current => ({ ...DEFAULT_SETTINGS, ...current, logoImage: url }));
 }
