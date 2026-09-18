@@ -19,7 +19,7 @@ export default function Navbar({ logoImage }: { logoImage?: string }) {
         >
           {logoImage ? (
             <Image src={logoImage} alt="Varun Nagalla Photography logo" width={128} height={128}
-              priority className="h-24 w-28 object-contain sm:h-28 sm:w-36" />
+              priority className="logo-blend h-24 w-28 object-contain sm:h-28 sm:w-36" />
           ) : "VN"}
         </Link>
         <ul className="flex items-center gap-4 text-xs sm:gap-8 sm:text-sm uppercase tracking-[0.18em] text-bone/70">

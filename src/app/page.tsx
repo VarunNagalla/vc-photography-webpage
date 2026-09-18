@@ -111,7 +111,7 @@ export default async function HomePage() {
                 <h2 className="font-display text-3xl text-bone/90 sm:text-4xl">Let&apos;s Connect</h2>
                 {settings.logoImage && (
                   <ProtectedImage src={settings.logoImage} alt="Photography logo" width={180} height={180}
-                    className="h-36 w-44 object-contain sm:h-44 sm:w-56" />
+                    className="logo-blend h-36 w-44 object-contain sm:h-44 sm:w-56" />
                 )}
               </div>
             </Reveal>
