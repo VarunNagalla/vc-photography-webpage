@@ -7,8 +7,8 @@ import Hero3D from "@/components/Hero3DLoader";
 import Reveal from "@/components/Reveal";
 import { PhotoViewerProvider } from "@/components/gallery/PhotoViewer";
 import { getPhotos } from "@/lib/photos";
-import { getContent } from "@/lib/content";
-import { getSettings } from "@/lib/settings";
+import { getContent, DEFAULT_CONTENT } from "@/lib/content";
+import { getSettings, DEFAULT_SETTINGS } from "@/lib/settings";
 
 // Always render fresh — admin can change photos/content/background at
 // any time and visitors must see the update immediately, not a build-time
@@ -16,7 +16,15 @@ import { getSettings } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [photos, content, settings] = await Promise.all([getPhotos(), getContent(), getSettings()]);
+  // Keep the public portfolio reachable during storage outages. Admin writes
+  // still fail normally, so an outage cannot overwrite saved data with defaults.
+  const results = await Promise.allSettled([getPhotos(), getContent(), getSettings()]);
+  for (const result of results) {
+    if (result.status === "rejected") console.error("Portfolio storage unavailable", result.reason);
+  }
+  const photos = results[0].status === "fulfilled" ? results[0].value : [];
+  const content = results[1].status === "fulfilled" ? results[1].value : DEFAULT_CONTENT;
+  const settings = results[2].status === "fulfilled" ? results[2].value : DEFAULT_SETTINGS;
   const { email, phone, instagram, location } = content.contact;
 
   return (

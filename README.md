@@ -60,6 +60,20 @@ Copy its output straight into `ADMIN_PASSWORD_HASH` in `.env.local` and restart 
 
 ## Where things are stored
 
+The September 2026 recovery uses the connected `vc-portfolio-recovery` Redis
+resource (`RECOVERY_KV_REST_API_URL` / `RECOVERY_KV_REST_API_TOKEN`). When those
+variables are absent, the app uses the original Upstash/KV variables.
+The public page falls back to built-in content during a storage outage; admin
+writes still require working storage. Check this with
+`node scripts/check-storage-outage.cjs`.
+
+`node scripts/recover-storage.cjs` is an explicit disaster-recovery command,
+not a normal build step. Run only when restoring missing metadata from the
+existing Blob store, with its authorized environment credentials. It preserves
+existing Redis keys, including an empty gallery. Reconstructed photos have blank
+captions and upload-date order; missing settings use the newest matching upload.
+It cannot recover original captions or custom text from deleted Redis data.
+
 - Site content (hero text, about copy, contact info): Redis key `content.json`
 - Photo metadata (captions, order, URLs): Redis key `photos.json`
 - Background image setting: Redis key `settings.json`

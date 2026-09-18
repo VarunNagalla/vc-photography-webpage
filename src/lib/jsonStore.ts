@@ -18,7 +18,12 @@ import { randomUUID } from "crypto";
 // updateJson) are unchanged from the old file-backed version, so
 // photos.ts / content.ts / settings.ts needed no changes at all.
 
-const redis = Redis.fromEnv();
+const redis = process.env.RECOVERY_KV_REST_API_URL
+  ? new Redis({
+      url: process.env.RECOVERY_KV_REST_API_URL,
+      token: process.env.RECOVERY_KV_REST_API_TOKEN!,
+    })
+  : Redis.fromEnv();
 
 // Upstash Redis is reachable from anywhere (it's a REST API), so a
 // single in-process write queue isn't enough to prevent two concurrent
