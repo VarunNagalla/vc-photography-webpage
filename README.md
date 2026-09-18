@@ -89,7 +89,7 @@ Everything lives under `/admin` (redirects to `/admin/login` if you're not authe
 - **Photos** (`/admin/photos`) — upload any number of photos in a single batch, each with its own caption; edit captions, delete, and reorder existing photos. There is no artificial limit on file count; each file is still validated independently (real image-content check, 30MB size cap per file) so one bad file in a large batch doesn't block the rest.
 - **Content** (`/admin/content`) — edit the hero title/subtitle, about section, and contact details shown on the public site.
 - **Background** (`/admin/background`) — upload a new full-site background image, or reset to the default animated backdrop.
-- **Logo** (`/admin/logo`) — one upload updates the website header and the image beside Let’s Connect (PNG, JPEG, WebP or GIF, up to 4 MB). Removing it clears both placements and restores VN in the header. Changes are saved immediately.
+- **Logo** (`/admin/logo`) — one upload updates the website header and the image beside Let’s Connect (PNG, JPEG, WebP or GIF, up to 4 MB). Near-white backgrounds are converted to transparency automatically. Removing it clears both placements and restores VN in the header. Changes are saved immediately.
 
 All changes appear on the public site immediately — pages are server-rendered on every request rather than cached at build time, specifically so admin edits never require a redeploy to show up.
 

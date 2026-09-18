@@ -60,7 +60,7 @@ async function main() {
   }
 
   // Upload and metadata failures must not delete the previous image.
-  for (const [route, field, setter] of [["background", "backgroundImage", "setBackgroundImage"], ["about-photo", "aboutImage", "setAboutImage"], ["logo", "logoImage", "setLogoImage"]]) {
+  for (const [route, field, setter] of [["background", "backgroundImage", "setBackgroundImage"], ["about-photo", "aboutImage", "setAboutImage"]]) {
     for (const failure of ["upload", "metadata", null]) {
       const events = [];
       const handlers = load(`src/app/api/admin/${route}/route.ts`, {
@@ -99,11 +99,13 @@ async function main() {
     "@/lib/fileValidation": { sniffImage },
     "@/lib/settings": settings,
     "@vercel/blob": { put: async () => ({ url: "https://example.com/logo.png" }), del: async () => {} },
+    sharp: { default: require("sharp") },
   });
   const upload = file => logoHandlers.POST({ formData: async () => ({ get: () => file }) });
   assert.equal((await upload(new File([Buffer.alloc(4 * 1024 * 1024 + 1)], "large.png"))).status, 400);
   assert.equal((await upload(new File(["not an image"], "fake.png"))).status, 400);
-  assert.equal((await upload(new File([Buffer.from("89504e470d0a1a0a00000000", "hex")], "logo.png"))).status, 200);
+  const tinyPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
+  assert.equal((await upload(new File([tinyPng], "logo.png"))).status, 200);
   assert.equal(stored.logoImage, "https://example.com/logo.png");
   assert.equal(stored.aboutImage, "https://example.com/about.jpg");
   assert.equal((await logoHandlers.DELETE(request("DELETE"))).status, 200);

@@ -60,7 +60,7 @@ export default function AdminLogoPage() {
       <h1 className="mb-2 font-display text-3xl text-bone/90">Logo</h1>
       <p className="mb-8 text-sm text-bone/60">
         Upload once to update your logo in the website header and beside Let’s Connect at the bottom.
-        Your full image is displayed without cropping. PNG, JPEG, WebP or GIF, up to 4 MB.
+        Near-white backgrounds are removed automatically so the logo blends into the site. PNG, JPEG, WebP or GIF, up to 4 MB.
       </p>
       <div className="mb-6 flex h-40 w-56 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-black/30">
         {loading ? <span className="text-sm text-bone/60">Loading…</span> : logoImage ? (
