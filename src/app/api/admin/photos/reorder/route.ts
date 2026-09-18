@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { authorizeAdmin } from "@/lib/adminAccess";
 import { reorderPhotos } from "@/lib/photos";
 
 const schema = z.object({
-  orderedIds: z.array(z.string().uuid()).min(1),
+  orderedIds: z.array(z.string().uuid()).min(1).max(10000)
+    .refine(ids => new Set(ids).size === ids.length, "Duplicate photo IDs"),
 });
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);

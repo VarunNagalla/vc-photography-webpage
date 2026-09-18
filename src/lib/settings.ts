@@ -1,4 +1,4 @@
-import { readJson, writeJson } from "./jsonStore";
+import { readJson, updateJson } from "./jsonStore";
 
 export interface SiteSettings {
     // Empty string means "no custom background uploaded yet" — the site
@@ -21,15 +21,9 @@ export async function getSettings(): Promise<SiteSettings> {
 }
 
 export async function setBackgroundImage(url: string): Promise<SiteSettings> {
-    const current = await getSettings();
-    const updated: SiteSettings = { ...current, backgroundImage: url };
-    await writeJson(FILE, updated);
-    return updated;
+    return updateJson<SiteSettings>(FILE, DEFAULT_SETTINGS, current => ({ ...current, backgroundImage: url }));
 }
 
 export async function setAboutImage(url: string): Promise<SiteSettings> {
-    const current = await getSettings();
-    const updated: SiteSettings = { ...current, aboutImage: url };
-    await writeJson(FILE, updated);
-    return updated;
+    return updateJson<SiteSettings>(FILE, DEFAULT_SETTINGS, current => ({ ...current, aboutImage: url }));
 }

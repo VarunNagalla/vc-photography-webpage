@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { authorizeAdmin } from "@/lib/adminAccess";
 import { getContent, updateContent } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
@@ -38,15 +37,16 @@ function stripControlChars<T>(value: T): T {
   return value;
 }
 
-export async function GET() {
-  // Public: the site needs this to render hero/about/contact text.
+export async function GET(req: NextRequest) {
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
   const content = await getContent();
   return NextResponse.json({ content });
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   const parsed = contentSchema.safeParse(body);

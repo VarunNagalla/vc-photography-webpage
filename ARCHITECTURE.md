@@ -19,7 +19,7 @@ Browser ──▶ Next.js (App Router)
               ├── settings.ts    — background image setting
               ├── auth.ts        — NextAuth config (Credentials provider)
               ├── fileValidation.ts — magic-byte image sniffing, size limits
-              └── rateLimit.ts   — in-memory login throttling
+              └── rateLimit.ts   — atomic Redis login throttling shared across instances
                        │
                        ▼
               Upstash Redis (photos.json/content.json/settings.json as keys)
@@ -42,7 +42,7 @@ This forces Next.js to render that route fresh on every request, reading current
 
 There is exactly one account, defined entirely by two environment variables: `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` (a bcrypt hash). NextAuth's Credentials provider (`src/lib/auth.ts`) compares the submitted username/password against those env vars using bcrypt — there is no signup endpoint, no users table, and nothing in the codebase that could create a second account. Sessions are JWT-based (no server-side session store needed) and the JWT/session callbacks attach a `role: "admin"` claim that downstream checks rely on.
 
-Login attempts are throttled by `src/lib/rateLimit.ts`: repeated failures from the same source trip a temporary lockout, which blunts brute-force attempts against the single account.
+Login attempts are throttled by `src/lib/rateLimit.ts`: an atomic Redis script counts attempts before password verification and permits six per IP per 15-minute window across all instances. Authentication fails closed during Redis outages. `adminAccess.ts` verifies the admin role inside every API handler and requires same-origin mutation requests independently of middleware.
 
 Authorization is checked in two independent places, intentionally:
 

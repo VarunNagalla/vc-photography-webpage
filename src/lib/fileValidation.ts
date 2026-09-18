@@ -22,7 +22,9 @@ export function sniffImage(buffer: Buffer): SniffResult {
     buffer[0] === 0x89 &&
     buffer[1] === 0x50 &&
     buffer[2] === 0x4e &&
-    buffer[3] === 0x47
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d && buffer[5] === 0x0a &&
+    buffer[6] === 0x1a && buffer[7] === 0x0a
   ) {
     return { valid: true, ext: "png", mime: "image/png" };
   }
@@ -32,7 +34,8 @@ export function sniffImage(buffer: Buffer): SniffResult {
     buffer[0] === 0x47 &&
     buffer[1] === 0x49 &&
     buffer[2] === 0x46 &&
-    buffer[3] === 0x38
+    buffer[3] === 0x38 &&
+    (buffer[4] === 0x37 || buffer[4] === 0x39) && buffer[5] === 0x61
   ) {
     return { valid: true, ext: "gif", mime: "image/gif" };
   }
@@ -55,7 +58,7 @@ export function sniffImage(buffer: Buffer): SniffResult {
 }
 
 export function isWithinSizeLimit(size: number): boolean {
-  return size > 0 && size <= MAX_FILE_BYTES;
+  return Number.isSafeInteger(size) && size > 0 && size <= MAX_FILE_BYTES;
 }
 
 export { MAX_FILE_BYTES };

@@ -17,7 +17,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
   // Defense in depth: middleware already gates this route, but we also
   // verify the session server-side in case middleware config ever drifts.
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if ((session?.user as { role?: string } | undefined)?.role !== "admin") {
     redirect("/admin/login");
   }
 

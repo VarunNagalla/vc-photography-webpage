@@ -5,7 +5,7 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-  { key: 'X-XSS-Protection', value: '1; mode=block' },
+  { key: 'X-XSS-Protection', value: '0' },
   {
     key: 'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload',
@@ -14,11 +14,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://picsum.photos https://fastly.picsum.photos https://*.public.blob.vercel-storage.com",
-      "font-src 'self' data:",
-      "connect-src 'self'",
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https://pdksodsajq4itx15.public.blob.vercel-storage.com",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://pdksodsajq4itx15.public.blob.vercel-storage.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -28,21 +28,15 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: 'fastly.picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
+        hostname: 'pdksodsajq4itx15.public.blob.vercel-storage.com',
+        search: '',
       },
     ],
   },

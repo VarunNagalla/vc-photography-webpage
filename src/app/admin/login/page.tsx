@@ -2,11 +2,10 @@
 
 import { Suspense, useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,15 +26,15 @@ function LoginForm() {
 
     if (!result || result.error) {
       if (result?.error === "TooManyAttempts") {
-        setError("Too many failed attempts. Please wait 15 minutes before trying again.");
+        setError("Sign-in is temporarily limited. Please wait 15 minutes before trying again.");
       } else {
         setError("Invalid username or password.");
       }
       return;
     }
 
-    const callbackUrl = searchParams.get("callbackUrl") || "/admin";
-    router.push(callbackUrl);
+    // Never navigate to an untrusted callbackUrl (including javascript: URLs).
+    router.push("/admin");
     router.refresh();
   }
 

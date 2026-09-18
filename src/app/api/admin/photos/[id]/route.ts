@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { del } from "@vercel/blob";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { authorizeAdmin } from "@/lib/adminAccess";
 import { deletePhoto, updatePhoto, getPhotos } from "@/lib/photos";
 
 const patchSchema = z.object({
-  caption: z.string().max(500).optional(),
+  caption: z.string().max(500),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
@@ -31,10 +30,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ photo: updated });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
 
   const photos = await getPhotos();
   const exists = photos.some((p) => p.id === id);

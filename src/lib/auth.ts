@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { checkRateLimit, recordFailedAttempt, clearAttempts } from "./rateLimit";
+import { checkRateLimit } from "./rateLimit";
 
 function getClientKey(req: { headers?: Record<string, string | string[] | undefined> }): string {
   const forwarded = req.headers?.["x-forwarded-for"];
@@ -29,7 +29,8 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         const key = getClientKey(req as { headers?: Record<string, string | string[] | undefined> });
-        const rl = checkRateLimit(key);
+        // Fail closed if shared throttling is unavailable.
+        const rl = await checkRateLimit(key).catch(() => ({ allowed: false }));
         if (!rl.allowed) {
           throw new Error("TooManyAttempts");
         }
@@ -40,8 +41,7 @@ export const authOptions: NextAuthOptions = {
         const adminUsername = process.env.ADMIN_USERNAME ?? "";
         const adminHash = process.env.ADMIN_PASSWORD_HASH ?? "";
 
-        if (!username || !password || !adminUsername || !adminHash) {
-          recordFailedAttempt(key);
+        if (!username || username.length > 254 || !password || Buffer.byteLength(password, "utf8") > 72 || !adminUsername || !adminHash) {
           return null;
         }
 
@@ -53,11 +53,9 @@ export const authOptions: NextAuthOptions = {
         const passwordMatches = await bcrypt.compare(password, adminHash);
 
         if (!usernameMatches || !passwordMatches) {
-          recordFailedAttempt(key);
           return null;
         }
 
-        clearAttempts(key);
         return { id: "admin", name: "Admin", email: adminUsername };
       },
     }),

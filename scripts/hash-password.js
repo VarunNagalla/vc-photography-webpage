@@ -24,6 +24,11 @@ if (password.length < 10) {
   process.exit(1);
 }
 
+if (Buffer.byteLength(password, "utf8") > 72) {
+  console.error("Please use at most 72 UTF-8 bytes; bcrypt truncates longer passwords.");
+  process.exit(1);
+}
+
 const hash = bcrypt.hashSync(password, 12);
 const escaped = hash.replace(/\$/g, "\\$");
 

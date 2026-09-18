@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
-import { authOptions } from "@/lib/auth";
+import { authorizeAdmin } from "@/lib/adminAccess";
 import { addPhoto, getPhotos } from "@/lib/photos";
 import { sniffImage, isWithinSizeLimit, MAX_FILE_BYTES } from "@/lib/fileValidation";
 
@@ -15,9 +14,9 @@ function sanitizeCaption(raw: string | null): string {
   return raw.replace(/[\x00-\x1F\x7F]/g, "").trim().slice(0, MAX_CAPTION_LENGTH);
 }
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(req: NextRequest) {
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
   const photos = await getPhotos();
   return NextResponse.json({ photos });
 }
@@ -30,11 +29,11 @@ export async function GET() {
 // serverless Functions have a read-only filesystem at runtime, so a plain
 // fs.writeFile here would either throw or silently disappear on the next
 // cold start. addRandomSuffix avoids collisions instead of throwing on an
-// existing pathname (uuidv4() filenames make collisions astronomically
+// existing pathname (randomUUID() filenames make collisions astronomically
 // unlikely anyway, but the random suffix is free insurance).
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await authorizeAdmin(req);
+  if (denied) return denied;
 
   let formData: FormData;
   try {
@@ -70,14 +69,15 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const filename = `${uuidv4()}.${sniffed.ext}`;
+    const filename = `${randomUUID()}.${sniffed.ext}`;
     const blob = await put(`photos/${filename}`, buffer, {
       access: "public",
+      contentType: sniffed.mime!,
       addRandomSuffix: true,
     });
 
     const photo = await addPhoto({
-      id: uuidv4(),
+      id: randomUUID(),
       filename: blob.pathname,
       url: blob.url,
       caption,

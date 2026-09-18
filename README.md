@@ -94,11 +94,20 @@ All changes appear on the public site immediately — pages are server-rendered 
 
 ## Security measures implemented
 
+Run `npm run test:security` with the recovery Redis credentials available in
+the environment or `.env.production.local`. The integration check creates one
+unique, expiring login-limit test key and deletes it afterward. It does not
+change site content, photos, or real login counters. Run `npm audit` to check
+the locked dependencies against current advisories.
+
 - Single hardcoded admin account via environment variables — no signup route exists anywhere in the app, no user database, nothing for an attacker to register against.
 - Passwords hashed with bcrypt; the plaintext password is never stored.
-- Login attempts are rate-limited (lockout after repeated failures from the same source) to resist brute-forcing.
+- Login attempts share an atomic Redis limit of six attempts per IP per 15-minute window across all Vercel instances. Authentication fails closed if the limiter is unavailable.
+- Every admin API handler independently checks the admin role. Mutations require a matching Origin header and reject cross-site requests.
+- Successful login always opens `/admin`; untrusted callback URLs are not used for navigation.
 - All `/admin` pages and `/api/admin/*` routes are protected twice: Next.js middleware blocks the request before it renders, and each route/layout independently re-checks the session server-side (defense in depth — neither check alone has to be perfect).
 - Uploaded files are validated by inspecting actual file content (magic bytes), not by trusting the filename extension or the browser-supplied MIME type, which blocks disguised/malicious uploads.
+- Background and About image replacement saves the new image metadata before deleting the old file.
 - Per-file size cap (30MB) and server-side caption sanitization (control characters stripped, length capped).
 - Captions are rendered through React's default escaping, so a caption containing `<script>` tags is displayed as harmless text, not executed.
 - Security headers are set globally (`next.config.js`): Content-Security-Policy, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Strict-Transport-Security, Referrer-Policy, Permissions-Policy, and `X-Powered-By` is removed.

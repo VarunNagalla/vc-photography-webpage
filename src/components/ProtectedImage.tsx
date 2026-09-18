@@ -14,6 +14,7 @@ export default function ProtectedImage(props: ImageProps) {
   return (
     <Image
       {...props}
+      alt={props.alt}
       draggable={false}
       onContextMenu={(e) => e.preventDefault()}
     />

@@ -18,7 +18,7 @@ import { randomUUID } from "crypto";
 // updateJson) are unchanged from the old file-backed version, so
 // photos.ts / content.ts / settings.ts needed no changes at all.
 
-const redis = process.env.RECOVERY_KV_REST_API_URL
+export const redis = process.env.RECOVERY_KV_REST_API_URL
   ? new Redis({
       url: process.env.RECOVERY_KV_REST_API_URL,
       token: process.env.RECOVERY_KV_REST_API_TOKEN!,
@@ -56,20 +56,17 @@ async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
   } finally {
     // Only clear the lock if we still own it, so a slow holder can
     // never delete a newer holder's lock after its own TTL expired.
-    const current = await redis.get<string>(lockKey);
-    if (current === lockId) {
-      await redis.del(lockKey);
-    }
+    await redis.eval(
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+      [lockKey], [lockId]
+    );
   }
 }
 
 export async function readJson<T>(file: string, fallback: T): Promise<T> {
   const data = await redis.get<T>(file);
-  if (data === null || data === undefined) {
-    await writeJson(file, fallback);
-    return fallback;
-  }
-  return data;
+  // Reads must never race a concurrent admin write by persisting defaults.
+  return data ?? fallback;
 }
 
 export async function writeJson<T>(file: string, data: T): Promise<void> {
