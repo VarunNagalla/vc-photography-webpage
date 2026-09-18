@@ -64,7 +64,7 @@ export default function AdminLogoPage() {
       </p>
       <div className="mb-6 flex h-40 w-56 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-black/30">
         {loading ? <span className="text-sm text-bone/60">Loading…</span> : logoImage ? (
-          <Image src={logoImage} alt="Current photography logo" width={160} height={160} className="logo-blend h-full w-full object-contain" />
+          <Image src={logoImage} alt="Current photography logo" width={160} height={160} className="h-full w-full object-contain" />
         ) : <span className="font-display text-4xl text-bone/90">VN</span>}
       </div>
       <label htmlFor="logo-file" className="mb-2 block text-sm text-bone/80">{logoImage ? "Replace logo" : "Upload logo"}</label>

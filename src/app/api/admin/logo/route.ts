@@ -49,12 +49,19 @@ export async function POST(req: NextRequest) {
   // Keep the previous image until both upload and metadata save succeed.
   const previous = await getSettings();
 
-  // Logos are commonly supplied on white cards. Make near-white pixels
-  // transparent so the mark blends into the site's dark background.
+  // Logos are commonly supplied on a solid white or black card. Estimate the
+  // card color from the four corners, then make matching pixels transparent.
   const raw = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const corners: number[][] = [];
+  const points = [[0, 0], [raw.info.width - 1, 0], [0, raw.info.height - 1], [raw.info.width - 1, raw.info.height - 1]];
+  for (const [x, y] of points) {
+    const i = (y * raw.info.width + x) * 4;
+    corners.push([raw.data[i], raw.data[i + 1], raw.data[i + 2]]);
+  }
+  const background = corners[0].map((_, channel) => corners.reduce((sum, color) => sum + color[channel], 0) / corners.length);
   for (let i = 0; i < raw.data.length; i += 4) {
-    const white = Math.min(raw.data[i], raw.data[i + 1], raw.data[i + 2]);
-    raw.data[i + 3] = white >= 242 ? 0 : white > 210 ? Math.round((242 - white) * 8) : 255;
+    const distance = Math.hypot(raw.data[i] - background[0], raw.data[i + 1] - background[1], raw.data[i + 2] - background[2]);
+    raw.data[i + 3] = distance < 30 ? 0 : distance < 90 ? Math.round((distance - 30) * 4.25) : 255;
   }
   const transparentLogo = await sharp(raw.data, {
     raw: { width: raw.info.width, height: raw.info.height, channels: 4 },

@@ -57,8 +57,3 @@ img {
   user-select: none;
   -webkit-touch-callout: none;
 }
-
-.logo-blend {
-  filter: invert(1);
-  mix-blend-mode: screen;
-}
